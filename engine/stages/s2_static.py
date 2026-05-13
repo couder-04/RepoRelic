@@ -176,15 +176,18 @@ def _pylint_check(path: str) -> list[StaticIssue]:
     issues: list[StaticIssue] = []
     buf = io.StringIO()
     try:
-        PylintRun(
-            [path, "--output-format=text", "--score=no",
-             "--disable=all",
-             "--enable=E,W,C0301,C0303,C0411,C0412,C0413,R0912,R0914,R0915"],
-            reporter=TextReporter(buf),
-            exit=False,
-        )
+        import contextlib
+        with contextlib.redirect_stdout(io.StringIO()), \
+             contextlib.redirect_stderr(io.StringIO()):
+            PylintRun(
+                [path, "--output-format=text", "--score=no",
+                 "--disable=all",
+                 "--enable=E,W,C0301,C0303,C0411,C0412,C0413,R0912,R0914,R0915"],
+                reporter=TextReporter(buf),
+                exit=False,
+            )
     except Exception:
-        return issues
+        pass
 
     for line in buf.getvalue().splitlines():
         m = _PYLINT_MSG_RE.match(line)
