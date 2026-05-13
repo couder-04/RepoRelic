@@ -3,10 +3,10 @@
   "displayName": "RepoRelic",
   "description": "Statically analyze Python codebases, auto-generate tests, diagnose failures, and produce a report.",
   "version": "0.0.1",
-  "publisher": "your-github-username",
+  "publisher": "couder-04",
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-github-username/RepoRelic"
+    "url": "https://github.com/couder-04/RepoRelic"
   },
   "engines": {
     "vscode": "^1.85.0"
