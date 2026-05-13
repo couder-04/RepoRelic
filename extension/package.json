@@ -2,7 +2,7 @@
   "name": "reporelic",
   "displayName": "RepoRelic",
   "description": "Statically analyze Python codebases, auto-generate tests, diagnose failures, and produce a report.",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "publisher": "couder-04",
   "repository": {
     "type": "git",

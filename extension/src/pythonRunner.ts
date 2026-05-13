@@ -1,11 +1,11 @@
 import { spawn, ChildProcess } from 'child_process';
 import * as path from 'path';
+import * as fs from 'fs';
 
 export class PythonRunner {
     private engineDir: string;
     private targetPath: string;
     private process?: ChildProcess;
-
     private progressCallback?: (msg: any) => void;
     private completeCallback?: (reportPath: string) => void;
     private errorCallback?: (err: string) => void;
@@ -22,9 +22,16 @@ export class PythonRunner {
     onPermissionRequest(cb: (msg: any) => void) { this.permissionCallback = cb; }
 
     start() {
-        // Run python -m engine <targetPath>
-        this.process = spawn('python', ['-m', 'engine', this.targetPath], {
-            cwd: path.dirname(this.engineDir)
+        const repoRoot = path.dirname(this.engineDir);
+
+        // Check for venv first, fallback to system python3/python
+        const venvPython = path.join(repoRoot, '.venv', 'bin', 'python3');
+        const pythonCmd = fs.existsSync(venvPython)
+            ? venvPython
+            : process.platform === 'darwin' ? 'python3' : 'python';
+
+        this.process = spawn(pythonCmd, ['-m', 'engine', this.targetPath], {
+            cwd: repoRoot
         });
 
         this.process.stdout?.on('data', (data: Buffer) => {
