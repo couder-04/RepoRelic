@@ -1,0 +1,28 @@
+You are a Python testing expert. Generate a **complete pytest test file** for the function below.
+
+## Function metadata
+- Name: {{ func.name }}
+- File: {{ func.file }}
+- Signature: def {{ func.name }}({{ func.args | join(", ") }})
+- Docstring: {{ func.docstring if func.docstring else "None" }}
+- Cyclomatic Complexity: {{ func.complexity }} ({{ func.complexity_rank }})
+- Known static issues:
+{% if func.issues -%}
+{% for issue in func.issues %}  - [{{ issue.severity }}] {{ issue.code }}: {{ issue.message }}
+{% endfor %}
+{%- else -%}
+  None
+{% endif %}
+
+## Source code
+```python
+{{ func.source }}
+```
+
+## Requirements
+1. Import the function correctly using its module path: `{{ func.file | replace("/", ".") | replace("\\", ".") | replace(".py", "") }}`
+2. Write at least one happy-path test and at least one edge-case / error-path test.
+3. Focus on the flagged issues above (if any).
+4. Use descriptive `test_` function names.
+5. Use `pytest.raises` for expected exceptions.
+6. Output **ONLY** valid Python code — no markdown fences, no explanation.

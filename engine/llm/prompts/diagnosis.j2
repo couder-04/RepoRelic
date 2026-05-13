@@ -1,0 +1,36 @@
+You are a senior Python engineer doing a code review and failure analysis.
+
+A generated test failed. Your job is to:
+1. Explain **why** it failed.
+2. Determine if it is a **real bug** in the source function or a **test authoring issue**.
+3. Suggest a **concrete fix** (either to the source function or the test).
+
+## Failed test
+```python
+{{ test_code }}
+```
+
+## Error / Traceback
+```
+{{ traceback }}
+```
+
+## Function under test
+- Name: {{ func.name }}
+- File: {{ func.file }}
+- Known static issues:
+{% if func.issues -%}
+{% for issue in func.issues %}  - [{{ issue.severity }}] {{ issue.code }}: {{ issue.message }}
+{% endfor %}
+{%- else -%}
+  None
+{% endif %}
+
+```python
+{{ func.source }}
+```
+
+## Response format (answer in plain text, no markdown headers needed)
+WHY IT FAILED: <one sentence>
+IS IT A REAL BUG: <yes / no / unclear>
+SUGGESTED FIX: <concrete code snippet or explanation>

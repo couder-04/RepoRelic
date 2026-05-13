@@ -1,0 +1,60 @@
+{
+  "name": "reporelic",
+  "displayName": "RepoRelic",
+  "description": "Statically analyze Python codebases, auto-generate tests, diagnose failures, and produce a report.",
+  "version": "0.0.1",
+  "publisher": "your-github-username",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-github-username/RepoRelic"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": ["Testing", "Linters", "Other"],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "reporelic.analyze",
+        "title": "Analyze with RepoRelic"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "reporelic.analyze",
+          "when": "explorerResourceIsFolder"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "RepoRelic",
+      "properties": {
+        "reporelic.pythonPath": {
+          "type": "string",
+          "default": "python",
+          "description": "Path to Python executable"
+        },
+        "reporelic.geminiApiKey": {
+          "type": "string",
+          "default": "",
+          "description": "Your Gemini API Key"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.3.0",
+    "webpack": "^5.89.0",
+    "webpack-cli": "^5.1.0",
+    "ts-loader": "^9.5.0"
+  }
+}

@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RepoRelic Dashboard</title>
+    <style>
+        :root {
+            --bg-color: var(--vscode-editor-background, #1e1e1e);
+            --text-color: var(--vscode-editor-foreground, #cccccc);
+            --accent-color: #007acc;
+            --success-color: #4ec9b0;
+            --warning-color: #ce9178;
+            --error-color: #f14c4c;
+            --border-color: var(--vscode-panel-border, #333);
+            --card-bg: rgba(255, 255, 255, 0.03);
+        }
+
+        body {
+            font-family: var(--vscode-font-family, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 24px;
+            overflow-x: hidden;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 16px;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            margin: 0;
+            background: linear-gradient(90deg, #007acc, #4ec9b0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 700;
+        }
+
+        /* Stage Stepper */
+        .stepper {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 32px;
+        }
+
+        .stage-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            border-radius: 8px;
+            position: relative;
+            transition: all 0.3s ease;
+            opacity: 0.6;
+        }
+
+        .stage-card.active {
+            opacity: 1;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 10px rgba(0, 122, 204, 0.2);
+            background: rgba(0, 122, 204, 0.05);
+        }
+
+        .stage-card.done {
+            opacity: 1;
+            border-color: var(--success-color);
+            background: rgba(78, 201, 176, 0.05);
+        }
+
+        .stage-num {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+            display: block;
+        }
+
+        .stage-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .status-icon {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+        }
+
+        /* Console / Terminal */
+        .terminal {
+            background: #000;
+            border-radius: 6px;
+            padding: 16px;
+            font-family: 'Fira Code', 'Courier New', monospace;
+            font-size: 13px;
+            height: 350px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+        }
+
+        .log-line {
+            margin-bottom: 4px;
+            line-height: 1.4;
+            display: flex;
+        }
+
+        .log-time { color: #666; margin-right: 10px; min-width: 85px; }
+        .log-tag { margin-right: 10px; font-weight: bold; }
+        .tag-info { color: var(--accent-color); }
+        .tag-success { color: var(--success-color); }
+        .tag-warn { color: var(--warning-color); }
+        .tag-error { color: var(--error-color); }
+        .log-msg { white-space: pre-wrap; }
+
+        /* Summary Panel */
+        .summary-panel {
+            display: none;
+            margin-top: 24px;
+            padding: 24px;
+            background: var(--card-bg);
+            border-radius: 12px;
+            border: 1px solid var(--success-color);
+            animation: slideUp 0.5s ease;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .report-btn {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-top: 16px;
+        }
+
+        .report-btn:hover {
+            filter: brightness(1.2);
+        }
+
+        /* Animations */
+        .pulse {
+            animation: pulse-animation 2s infinite;
+        }
+
+        @keyframes pulse-animation {
+            0% { box-shadow: 0 0 0 0px rgba(0, 122, 204, 0.4); }
+            100% { box-shadow: 0 0 0 10px rgba(0, 122, 204, 0); }
+        }
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal {
+            background: var(--bg-color);
+            border: 1px solid var(--accent-color);
+            padding: 32px;
+            border-radius: 12px;
+            max-width: 450px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            animation: slideUp 0.3s ease;
+        }
+
+        .modal h2 { margin-top: 0; color: var(--accent-color); }
+        .modal p { margin-bottom: 24px; line-height: 1.5; }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 10px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            border: none;
+        }
+
+        .btn-primary { background: var(--accent-color); color: white; }
+        .btn-secondary { background: #444; color: white; }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="modal">
+            <h2 id="modal-title">Permission Required</h2>
+            <p id="modal-msg">Loading prompt...</p>
+            <div class="modal-actions">
+                <button class="btn btn-primary" id="modal-allow">Allow Execution</button>
+                <button class="btn btn-secondary" id="modal-deny">Deny</button>
+            </div>
+        </div>
+    </div>
+    <div class="header">
+        <h1>REPO RELIC • ENGINE</h1>
+        <div id="overall-status">Ready</div>
+    </div>
+
+    <!-- 8 Stage Stepper -->
+    <div class="stepper" id="stepper">
+        <div class="stage-card" id="s1">
+            <span class="stage-num">Stage 1</span>
+            <div class="stage-name">Understand</div>
+            <div class="status-icon" id="i1">⚪</div>
+        </div>
+        <div class="stage-card" id="s2">
+            <span class="stage-num">Stage 2</span>
+            <div class="stage-name">Static Analysis</div>
+            <div class="status-icon" id="i2">⚪</div>
+        </div>
+        <div class="stage-card" id="s3">
+            <span class="stage-num">Stage 3</span>
+            <div class="stage-name">Dep Graph</div>
+            <div class="status-icon" id="i3">⚪</div>
+        </div>
+        <div class="stage-card" id="s4">
+            <span class="stage-num">Stage 4</span>
+            <div class="stage-name">Knowledge</div>
+            <div class="status-icon" id="i4">⚪</div>
+        </div>
+        <div class="stage-card" id="s5">
+            <span class="stage-num">Stage 5</span>
+            <div class="stage-name">Test Gen</div>
+            <div class="status-icon" id="i5">⚪</div>
+        </div>
+        <div class="stage-card" id="s6">
+            <span class="stage-num">Stage 6</span>
+            <div class="stage-name">Execution</div>
+            <div class="status-icon" id="i6">⚪</div>
+        </div>
+        <div class="stage-card" id="s7">
+            <span class="stage-num">Stage 7</span>
+            <div class="stage-name">Diagnosis</div>
+            <div class="status-icon" id="i7">⚪</div>
+        </div>
+        <div class="stage-card" id="s8">
+            <span class="stage-num">Stage 8</span>
+            <div class="stage-name">Reporting</div>
+            <div class="status-icon" id="i8">⚪</div>
+        </div>
+    </div>
+
+    <div class="terminal" id="terminal">
+        <div class="log-line">
+            <span class="log-time">[${new Date().toLocaleTimeString()}]</span>
+            <span class="log-tag tag-info">SYSTEM</span>
+            <span class="log-msg">Engine initialized. Awaiting pipeline...</span>
+        </div>
+    </div>
+
+    <div class="summary-panel" id="summary">
+        <h2>🎉 Analysis Complete</h2>
+        <p id="summary-msg">Everything processed successfully.</p>
+        <button class="report-btn" id="open-report">View Full Report (report.md)</button>
+    </div>
+
+    <script>
+        const vscode = acquireVsCodeApi();
+        const terminal = document.getElementById('terminal');
+        const summary = document.getElementById('summary');
+        const overallStatus = document.getElementById('overall-status');
+
+        const modalOverlay = document.getElementById('modal-overlay');
+        const modalMsg = document.getElementById('modal-msg');
+
+        function addLog(msg, type = 'info') {
+            const line = document.createElement('div');
+            line.className = 'log-line';
+            const time = new Date().toLocaleTimeString([], {hour12: false});
+            
+            const tagClass = type === 'success' ? 'tag-success' : 
+                            type === 'warn' ? 'tag-warn' : 
+                            type === 'error' ? 'tag-error' : 'tag-info';
+
+            line.innerHTML = `
+                <span class="log-time">[${time}]</span>
+                <span class="log-tag ${tagClass}">${type.toUpperCase()}</span>
+                <span class="log-msg">${msg}</span>
+            `;
+            terminal.appendChild(line);
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        window.addEventListener('message', event => {
+            const message = event.data;
+            switch (message.command) {
+                case 'progress':
+                    const d = message.data;
+                    const card = document.getElementById(`s${d.stage}`);
+                    const icon = document.getElementById(`i${d.stage}`);
+                    
+                    if (d.status === 'running') {
+                        card.classList.add('active');
+                        card.classList.remove('done');
+                        icon.innerText = '⚡';
+                        overallStatus.innerText = `Running Stage ${d.stage}...`;
+                        addLog(d.message, 'info');
+                    } else if (d.status === 'done') {
+                        card.classList.add('done');
+                        card.classList.remove('active');
+                        icon.innerText = '✅';
+                        addLog(d.message, 'success');
+                    } else if (d.status === 'waiting') {
+                        icon.innerText = '⏸';
+                        addLog(d.message, 'warn');
+                    }
+                    break;
+                
+                case 'permission':
+                    modalMsg.innerText = message.text;
+                    modalOverlay.style.display = 'flex';
+                    addLog("Awaiting user permission...", "warn");
+                    break;
+                    
+                case 'complete':
+                    overallStatus.innerText = 'Finished';
+                    summary.style.display = 'block';
+                    document.getElementById('summary-msg').innerText = `Full analysis report is ready at: ${message.reportPath}`;
+                    addLog("Pipeline terminated successfully.", "success");
+                    break;
+            }
+        });
+
+        document.getElementById('modal-allow').onclick = () => {
+            modalOverlay.style.display = 'none';
+            vscode.postMessage({ command: 'permissionResponse', approved: true });
+        };
+
+        document.getElementById('modal-deny').onclick = () => {
+            modalOverlay.style.display = 'none';
+            vscode.postMessage({ command: 'permissionResponse', approved: false });
+        };
+
+        document.getElementById('open-report').onclick = () => {
+            vscode.postMessage({ command: 'openReport' });
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,76 @@
+import { spawn, ChildProcess } from 'child_process';
+import * as path from 'path';
+
+export class PythonRunner {
+    private engineDir: string;
+    private targetPath: string;
+    private process?: ChildProcess;
+
+    private progressCallback?: (msg: any) => void;
+    private completeCallback?: (reportPath: string) => void;
+    private errorCallback?: (err: string) => void;
+    private permissionCallback?: (msg: any) => void;
+
+    constructor(engineDir: string, targetPath: string) {
+        this.engineDir = engineDir;
+        this.targetPath = targetPath;
+    }
+
+    onProgress(cb: (msg: any) => void) { this.progressCallback = cb; }
+    onComplete(cb: (reportPath: string) => void) { this.completeCallback = cb; }
+    onError(cb: (err: string) => void) { this.errorCallback = cb; }
+    onPermissionRequest(cb: (msg: any) => void) { this.permissionCallback = cb; }
+
+    start() {
+        // Run python -m engine <targetPath>
+        this.process = spawn('python', ['-m', 'engine', this.targetPath], {
+            cwd: path.dirname(this.engineDir)
+        });
+
+        this.process.stdout?.on('data', (data: Buffer) => {
+            const lines = data.toString().split('\n');
+            for (const line of lines) {
+                if (!line.trim()) continue;
+                try {
+                    const msg = JSON.parse(line.trim());
+                    this.handleMessage(msg);
+                } catch (e) {
+                    console.error('Failed to parse stdout:', line);
+                }
+            }
+        });
+
+        this.process.stderr?.on('data', (data: Buffer) => {
+            console.error('stderr:', data.toString());
+        });
+
+        this.process.on('close', (code) => {
+            if (code !== 0) {
+                this.errorCallback?.(`Process exited with code ${code}`);
+            }
+        });
+    }
+
+    sendPermissionResponse(approved: boolean) {
+        if (this.process && this.process.stdin) {
+            this.process.stdin.write(JSON.stringify({ approved }) + '\n');
+        }
+    }
+
+    private handleMessage(msg: any) {
+        switch (msg.type) {
+            case 'progress':
+                this.progressCallback?.(msg);
+                break;
+            case 'complete':
+                this.completeCallback?.(msg.report_path);
+                break;
+            case 'permission':
+                this.permissionCallback?.(msg);
+                break;
+            case 'error':
+                this.errorCallback?.(msg.message);
+                break;
+        }
+    }
+}
