@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import * as path from 'path';
 import { RepoRelicPanel } from './webviewPanel';
 import { PythonRunner } from './pythonRunner';
 
@@ -10,14 +11,26 @@ export function activate(context: vscode.ExtensionContext) {
         }
 
         const targetPath = uri.fsPath;
-        
+
+        // Get repo path from settings
+        const config = vscode.workspace.getConfiguration('reporelic');
+        let repoPath = config.get<string>('repoPath', '');
+
+        if (!repoPath) {
+            vscode.window.showErrorMessage(
+                'RepoRelic: Please set "reporelic.repoPath" in VS Code settings to your local RepoRelic repo path. e.g. /Users/you/code_playground/RepoRelic'
+            );
+            return;
+        }
+
+        const engineDir = path.join(repoPath, 'engine');
+
         // Show panel
         RepoRelicPanel.createOrShow(context.extensionUri);
-        
+
         // Start engine
-        const engineDir = vscode.Uri.joinPath(context.extensionUri, '..', 'engine').fsPath;
         const runner = new PythonRunner(engineDir, targetPath);
-        
+
         runner.onProgress((msg) => {
             RepoRelicPanel.currentPanel?.updateProgress(msg);
         });
@@ -38,7 +51,6 @@ export function activate(context: vscode.ExtensionContext) {
                     runner.sendPermissionResponse(approved);
                 };
             } else {
-                // Fallback if panel is closed
                 runner.sendPermissionResponse(false);
             }
         });

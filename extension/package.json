@@ -2,7 +2,7 @@
   "name": "reporelic",
   "displayName": "RepoRelic",
   "description": "Statically analyze Python codebases, auto-generate tests, diagnose failures, and produce a report.",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "publisher": "couder-04",
   "repository": {
     "type": "git",
@@ -41,6 +41,11 @@
           "type": "string",
           "default": "",
           "description": "Your Gemini API Key"
+        },
+        "reporelic.repoPath": {
+          "type": "string",
+          "default": "",
+          "description": "Full path to your local RepoRelic repo (e.g. /Users/you/code_playground/RepoRelic)"
         }
       }
     }
