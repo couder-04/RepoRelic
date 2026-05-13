@@ -2,7 +2,7 @@
   "name": "reporelic",
   "displayName": "RepoRelic",
   "description": "Statically analyze Python codebases, auto-generate tests, diagnose failures, and produce a report.",
-  "version": "0.0.3",
+  "version": "0.0.6",
   "publisher": "couder-04",
   "repository": {
     "type": "git",
@@ -12,7 +12,7 @@
     "vscode": "^1.85.0"
   },
   "categories": ["Testing", "Linters", "Other"],
-  "activationEvents": [],
+  "activationEvents": ["onCommand:reporelic.analyze"],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
@@ -37,6 +37,22 @@
           "default": "python",
           "description": "Path to Python executable"
         },
+        "reporelic.llmProvider": {
+          "type": "string",
+          "enum": ["openai", "gemini"],
+          "default": "openai",
+          "description": "LLM provider to use for test generation and diagnosis. Use OpenAI-compatible endpoints or Gemini."
+        },
+        "reporelic.openaiApiKey": {
+          "type": "string",
+          "default": "",
+          "description": "API key for OpenAI-compatible providers, including GPT-OSS, DeepSeek, Claude-compatible endpoints, etc."
+        },
+        "reporelic.openaiBaseUrl": {
+          "type": "string",
+          "default": "https://api.openai.com/v1",
+          "description": "Base URL for OpenAI-compatible endpoints. Use this to target DeepSeek, GPT-OSS, Claude-compatible services, etc."
+        },
         "reporelic.geminiApiKey": {
           "type": "string",
           "default": "",
@@ -45,7 +61,7 @@
         "reporelic.repoPath": {
           "type": "string",
           "default": "",
-          "description": "Full path to your local RepoRelic repo (e.g. /Users/you/code_playground/RepoRelic)"
+          "description": "Full path to your local RepoRelic repo (e.g. C:\\Users\\You\\code_playground\\RepoRelic)"
         }
       }
     }

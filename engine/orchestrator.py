@@ -53,7 +53,7 @@ def run(target_path: str):
     )
 
     # ── Stage 5: Test generation (LLM) ────────────────────────────────────
-    generated_tests = _run_stage(
+    generated_tests, skipped_deps = _run_stage(
         5, "Test Generation",
         lambda: s5_testgen.run(risky_funcs, cfg, client)
     )
@@ -75,7 +75,7 @@ def run(target_path: str):
         8, "Output Report",
         lambda: s8_report.run(
             target_path, file_maps, analysis, dep_graph,
-            risky_funcs, test_results, diagnoses, cfg
+            risky_funcs, test_results, diagnoses, cfg, skipped_deps
         )
     )
 
@@ -101,7 +101,7 @@ def _safe_defaults(stage_num: int):
         2: _EmptyAnalysis(),
         3: _empty_graph(),
         4: (_empty_graph(), []),
-        5: [],
+        5: ([], []),
         6: [],
         7: [],
         8: "",

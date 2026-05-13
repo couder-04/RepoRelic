@@ -14,6 +14,22 @@ You are a Python testing expert. Generate a **complete pytest test file** for th
   None
 {% endif %}
 
+{% if func.git_history and func.git_history.issues %}
+## Historical Issues from Git
+This function has been modified {{ func.git_history.commit_count }} times in git history.
+Volatility score: {{ func.git_history.volatility_score }}/10 (higher = more bug fixes)
+
+Common issues from commit messages:
+{% for issue in func.git_history.issues %}  - {{ issue }}
+{% endfor %}
+
+{% if func.git_history.error_types %}
+Error types frequently encountered:
+{% for err_type, count in func.git_history.error_types.items() %}  - {{ err_type }}: {{ count }} occurrences
+{% endfor %}
+{% endif %}
+{% endif %}
+
 ## Source code
 ```python
 {{ func.source }}
@@ -22,7 +38,9 @@ You are a Python testing expert. Generate a **complete pytest test file** for th
 ## Requirements
 1. Import the function correctly using its module path: `{{ func.file | replace("/", ".") | replace("\\", ".") | replace(".py", "") }}`
 2. Write at least one happy-path test and at least one edge-case / error-path test.
-3. Focus on the flagged issues above (if any).
-4. Use descriptive `test_` function names.
-5. Use `pytest.raises` for expected exceptions.
-6. Output **ONLY** valid Python code — no markdown fences, no explanation.
+3. Focus on production integrity, dependency stability, and edge-case handling.
+4. Do not introduce extra third-party libraries beyond `pytest`.
+5. Prefer tests that reflect deployed/production usage, including invalid input handling and boundary conditions.
+6. Use descriptive `test_` function names.
+7. Use `pytest.raises` for expected exceptions.
+8. Output **ONLY** valid Python code — no markdown fences, no explanation.

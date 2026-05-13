@@ -17,12 +17,16 @@ class Config:
     min_lines_no_docstring: int = 20         # No docstring + > this lines → risky
 
     # --- LLM provider selection ---
-    llm_provider: str = field(default_factory=lambda: os.getenv("LLM_PROVIDER", "gemini").lower())
+    llm_provider: str = field(default_factory=lambda: os.getenv("LLM_PROVIDER", "openai").lower())
+    openai_api_key: str = field(default_factory=lambda: os.getenv("OPENAI_API_KEY", ""))
+    openai_base_url: str = field(default_factory=lambda: os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1"))
     gemini_api_key: str = field(default_factory=lambda: os.getenv("GEMINI_API_KEY", ""))
     deepseek_api_key: str = field(default_factory=lambda: os.getenv("DEEPSEEK_API_KEY", ""))
     deepseek_base_url: str = field(default_factory=lambda: os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1"))
 
     # Model names per provider (can be overridden via env if needed)
+    openai_test_model: str = field(default_factory=lambda: os.getenv("OPENAI_TEST_MODEL", "gpt-4o-mini"))
+    openai_diag_model: str = field(default_factory=lambda: os.getenv("OPENAI_DIAG_MODEL", "gpt-4o"))
     gemini_test_model: str = field(default_factory=lambda: os.getenv("GEMINI_TEST_MODEL", "gemini-2.5-flash"))
     gemini_diag_model: str = field(default_factory=lambda: os.getenv("GEMINI_DIAG_MODEL", "gemini-2.5-pro"))
     deepseek_test_model: str = field(default_factory=lambda: os.getenv("DEEPSEEK_TEST_MODEL", "deepseek/deepseek-v4-flash"))
@@ -33,12 +37,18 @@ class Config:
     max_tpm: int = 30_000
     min_delay_seconds: float = 2.0
 
-    # --- Paths ---
+    # --- Git history enrichment ---
+    include_git_history: bool = field(default_factory=lambda: os.getenv("INCLUDE_GIT_HISTORY", "true").lower() == "true")
+    git_history_depth: int = field(default_factory=lambda: int(os.getenv("GIT_HISTORY_DEPTH", "50")))
+
     output_dir: str = ".reporelic"
     tests_dir: str = ".reporelic/generated_tests"
     report_filename: str = "report.md"
     knowledge_graph_filename: str = "knowledge_graph.json"
-
+    tests_dir: str = ".reporelic/generated_tests"
+    report_filename: str = "report.md"
+    knowledge_graph_filename: str = "knowledge_graph.json"
+    tests_dir: str = ".reporelic/generated_tests"
     # Directories to skip when walking codebase
     skip_dirs: Tuple[str, ...] = (
         "__pycache__", ".venv", "venv", ".git",
@@ -50,10 +60,13 @@ class Config:
         """Ensure required keys are present for the chosen provider."""
         if self.llm_provider == "gemini":
             if not self.gemini_api_key:
-                raise RuntimeError("GEMINI_API_KEY missing in .env for Gemini provider.")
+                raise RuntimeError("GEMINI_API_KEY missing in environment for Gemini provider.")
+        elif self.llm_provider == "openai":
+            if not self.openai_api_key:
+                raise RuntimeError("OPENAI_API_KEY missing in environment for OpenAI-compatible provider.")
         elif self.llm_provider == "deepseek":
             if not self.deepseek_api_key:
-                raise RuntimeError("DEEPSEEK_API_KEY missing in .env for DeepSeek provider.")
+                raise RuntimeError("DEEPSEEK_API_KEY missing in environment for DeepSeek provider.")
         else:
             raise ValueError(f"Unsupported LLM_PROVIDER: {self.llm_provider}")
 

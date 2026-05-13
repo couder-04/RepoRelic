@@ -20,9 +20,7 @@ from typing import Any
 import networkx as nx
 from networkx.readwrite import json_graph
 
-from engine.config import Config
-from engine.models.file_map import FileMap, FunctionInfo
-from engine.models.analysis import AnalysisResult, ComplexityScore, StaticIssue
+from engine.enrichment.git_analyzer import enrich_with_git_history
 from engine import progress
 
 
@@ -35,6 +33,7 @@ def run(
     file_maps: list[FileMap],
     analysis: AnalysisResult,
     cfg: Config,
+    target_path: str = "",
 ) -> tuple[nx.DiGraph, list[dict[str, Any]]]:
     """
     Returns
@@ -87,6 +86,9 @@ def run(
             if is_risky:
                 risky_funcs.append(dict(G.nodes[node_id]))
                 risky_funcs[-1]["node_id"] = node_id
+
+    # Enrich risky functions with git history data
+    risky_funcs = enrich_with_git_history(risky_funcs, target_path, cfg)
 
     # Serialize graph to JSON
     os.makedirs(cfg.output_dir, exist_ok=True)

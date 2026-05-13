@@ -25,11 +25,25 @@ export function activate(context: vscode.ExtensionContext) {
 
         const engineDir = path.join(repoPath, 'engine');
 
+        const llmProvider = config.get<string>('llmProvider', 'openai');
+        const openaiApiKey = config.get<string>('openaiApiKey', '');
+        const openaiBaseUrl = config.get<string>('openaiBaseUrl', 'https://api.openai.com/v1');
+        const geminiApiKey = config.get<string>('geminiApiKey', '');
+        const pythonPath = config.get<string>('pythonPath', 'python');
+
         // Show panel
         RepoRelicPanel.createOrShow(context.extensionUri);
 
         // Start engine
-        const runner = new PythonRunner(engineDir, targetPath);
+        const runner = new PythonRunner(engineDir, targetPath, {
+            pythonPath,
+            env: {
+                LLM_PROVIDER: llmProvider,
+                OPENAI_API_KEY: openaiApiKey,
+                OPENAI_BASE_URL: openaiBaseUrl,
+                GEMINI_API_KEY: geminiApiKey,
+            },
+        });
 
         runner.onProgress((msg) => {
             RepoRelicPanel.currentPanel?.updateProgress(msg);

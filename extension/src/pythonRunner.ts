@@ -2,18 +2,25 @@ import { spawn, ChildProcess } from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
 
+export interface PythonRunnerOptions {
+    pythonPath?: string;
+    env?: NodeJS.ProcessEnv;
+}
+
 export class PythonRunner {
     private engineDir: string;
     private targetPath: string;
+    private options: PythonRunnerOptions;
     private process?: ChildProcess;
     private progressCallback?: (msg: any) => void;
     private completeCallback?: (reportPath: string) => void;
     private errorCallback?: (err: string) => void;
     private permissionCallback?: (msg: any) => void;
 
-    constructor(engineDir: string, targetPath: string) {
+    constructor(engineDir: string, targetPath: string, options: PythonRunnerOptions = {}) {
         this.engineDir = engineDir;
         this.targetPath = targetPath;
+        this.options = options;
     }
 
     onProgress(cb: (msg: any) => void) { this.progressCallback = cb; }
@@ -23,15 +30,25 @@ export class PythonRunner {
 
     start() {
         const repoRoot = path.dirname(this.engineDir);
+        const pythonCmd = this.options.pythonPath && this.options.pythonPath.trim()
+            ? this.options.pythonPath
+            : (() => {
+                const venvPython = path.join(repoRoot, '.venv', 'bin', 'python3');
+                return fs.existsSync(venvPython)
+                    ? venvPython
+                    : process.platform === 'darwin' ? 'python3' : 'python';
+            })();
 
-        // Check for venv first, fallback to system python3/python
-        const venvPython = path.join(repoRoot, '.venv', 'bin', 'python3');
-        const pythonCmd = fs.existsSync(venvPython)
-            ? venvPython
-            : process.platform === 'darwin' ? 'python3' : 'python';
+        const env = {
+            ...process.env,
+            ...(this.options.env ?? {}),
+        };
+
+        console.log('RepoRelic spawning:', pythonCmd, 'cwd:', repoRoot, 'target:', this.targetPath);
 
         this.process = spawn(pythonCmd, ['-m', 'engine', this.targetPath], {
-            cwd: repoRoot
+            cwd: repoRoot,
+            env,
         });
 
         this.process.stdout?.on('data', (data: Buffer) => {
@@ -48,10 +65,13 @@ export class PythonRunner {
         });
 
         this.process.stderr?.on('data', (data: Buffer) => {
-            console.error('stderr:', data.toString());
+            const msg = data.toString();
+            console.error('stderr:', msg);
+            this.errorCallback?.(msg);
         });
 
         this.process.on('close', (code) => {
+            console.log('RepoRelic process closed with code:', code);
             if (code !== 0) {
                 this.errorCallback?.(`Process exited with code ${code}`);
             }

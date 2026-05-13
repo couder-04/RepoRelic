@@ -1,4 +1,4 @@
-"""Unified LLM client — dispatches to Gemini or DeepSeek based on config."""
+"""Unified LLM client — dispatches to Gemini or OpenAI-compatible APIs based on config."""
 from __future__ import annotations
 
 from engine.config import Config
@@ -19,8 +19,8 @@ class LLMClient:
 
         if self._provider == "gemini":
             self._backend = _GeminiBackend(cfg)
-        elif self._provider == "deepseek":
-            self._backend = _DeepSeekBackend(cfg)
+        elif self._provider in ("openai", "deepseek"):
+            self._backend = _OpenAICompatibleBackend(cfg)
         else:
             raise ValueError(f"Unknown LLM provider: {self._provider}")
 
@@ -33,7 +33,6 @@ class LLMClient:
         prompt     : full prompt string
         model_role : "test" (cheaper/faster) or "diag" (smarter/slower)
         """
-        # Estimate tokens: ~4 chars per token
         estimated = max(500, len(prompt) // 4)
         self.limiter.wait_if_needed(estimated)
         result = self._backend.generate(prompt, model_role)
@@ -64,25 +63,26 @@ class _GeminiBackend:
 
 
 # ---------------------------------------------------------------------------
-# DeepSeek backend (OpenAI-compatible API)
+# OpenAI-compatible backend
 # ---------------------------------------------------------------------------
 
-class _DeepSeekBackend:
+class _OpenAICompatibleBackend:
     def __init__(self, cfg: Config):
         try:
             from openai import OpenAI
         except ImportError:
             raise ImportError(
-                "DeepSeek requires the 'openai' package. "
+                "OpenAI-compatible providers require the 'openai' package. "
                 "Run: pip install openai"
             )
-        self._client = OpenAI(
-            api_key=cfg.deepseek_api_key,
-            base_url=cfg.deepseek_base_url,
-        )
+
+        api_key = cfg.openai_api_key if cfg.llm_provider == "openai" else cfg.deepseek_api_key
+        base_url = cfg.openai_base_url if cfg.llm_provider == "openai" else cfg.deepseek_base_url
+
+        self._client = OpenAI(api_key=api_key, base_url=base_url)
         self._models = {
-            "test": cfg.deepseek_test_model,
-            "diag": cfg.deepseek_diag_model,
+            "test": cfg.openai_test_model if cfg.llm_provider == "openai" else cfg.deepseek_test_model,
+            "diag": cfg.openai_diag_model if cfg.llm_provider == "openai" else cfg.deepseek_diag_model,
         }
 
     def generate(self, prompt: str, model_role: str) -> str:
