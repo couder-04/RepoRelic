@@ -58,10 +58,15 @@ def enrich_with_git_history(
 
 def _is_git_repo(path: str) -> bool:
     """Check if path is a git repository."""
+    if os.path.isfile(path):
+        cwd = os.path.dirname(path)
+    else:
+        cwd = path
+        
     try:
         subprocess.run(
             ["git", "rev-parse", "--git-dir"],
-            cwd=path,
+            cwd=cwd,
             capture_output=True,
             check=True,
             timeout=10,
@@ -88,17 +93,21 @@ def _analyze_function_history(func: dict[str, Any], repo_path: str, cfg: Config)
 
     # Get git log for this file with line ranges
     try:
+        if os.path.isfile(repo_path):
+            cwd = os.path.dirname(repo_path)
+        else:
+            cwd = repo_path
+            
         # Get commits that touched lines in this function's range
         cmd = [
             "git", "log",
             "--oneline",
-            "--follow",
             f"-L{start_line},{end_line}:{file_path}",
             f"--max-count={cfg.git_history_depth}",
         ]
         result = subprocess.run(
             cmd,
-            cwd=repo_path,
+            cwd=cwd,
             capture_output=True,
             text=True,
             timeout=30,
