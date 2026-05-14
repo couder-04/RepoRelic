@@ -4,7 +4,7 @@
 
 ### AI-Powered Autonomous Repository Intelligence Engine
 
-<img src="assets/logo.png" width="220"/>
+<img src="assets/icon.png" width="220"/>
 
 <p align="center">
   <strong>Understand • Analyze • Diagnose • Generate • Execute</strong>
