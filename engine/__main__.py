@@ -5,6 +5,10 @@ from engine import orchestrator, progress
 
 
 def main():
+    # Print Python version at startup
+    print(f"[RepoRelic] Python version: {sys.version}")
+    print(f"[RepoRelic] Python executable: {sys.executable}")
+    
     parser = argparse.ArgumentParser(description="RepoRelic Python Analysis Engine")
     parser.add_argument("target", nargs="?", help="Path to the target codebase")
     parser.add_argument("--check-deps", action="store_true",

@@ -1,4 +1,6 @@
 import math
+import pygame
+import PySimpleGUI
 import os
 
 def calculate_something(data=None):

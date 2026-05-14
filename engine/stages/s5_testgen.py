@@ -59,15 +59,8 @@ def run(
                       f"({func['file']}) ...")
         try:
             missing = _missing_dependencies(func['abs_path'], project_root)
-            if missing:
-                progress.emit(stage, name, "running",
-                              f"  ⚠ Skipped {func['name']}: missing dependencies {missing}")
-                skipped_deps.append({
-                    "function": func['name'],
-                    "file": func['file'],
-                    "missing": missing,
-                })
-                continue
+            # Note: Even if dependencies are missing, generate the test anyway
+            # The execution stage will handle the import errors
 
             prompt = template.render(func=_FuncView(func))
             code = client.generate(prompt, model_role="test")
@@ -81,6 +74,17 @@ def run(
             out_path = _test_file_path(cfg.tests_dir, func)
             Path(out_path).write_text(code, encoding="utf-8")
             generated.append(out_path)
+
+            # If there were missing deps, note it
+            if missing:
+                progress.emit(stage, name, "running",
+                              f"  ⚠ Generated test for {func['name']} despite missing dependencies {missing}")
+                skipped_deps.append({
+                    "function": func['name'],
+                    "file": func['file'],
+                    "missing": missing,
+                })
+
         except Exception as e:
             progress.emit(stage, name, "running",
                           f"  ⚠ Skipped {func['name']}: {e}")
@@ -139,9 +143,8 @@ def _missing_dependencies(path: str, project_root: str) -> list[str]:
         if module in {"__future__", "typing", "dataclasses", "pathlib", "os", "sys", "re", "json", "ast", "math", "collections", "typing_extensions"}:
             continue
         try:
-            if importlib.util.find_spec(module) is None:
-                missing.append(module)
-        except Exception:
+            importlib.import_module(module)
+        except ImportError:
             missing.append(module)
     return missing
 
