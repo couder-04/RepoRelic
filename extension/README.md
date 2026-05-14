@@ -268,18 +268,18 @@ pip install -r engine/requirements.txt
 
 ## Analysis Pipeline
 
-![Pipeline](media/pipeline.png)
+![Pipeline](https://raw.githubusercontent.com/couder-04/RepoRelic/main/extension/media/pipeline.png)
 
 ---
 
 ## Generated Markdown Report
 
-![Report](media/report.png)
+![Report](https://raw.githubusercontent.com/couder-04/RepoRelic/main/extension/media/report.png)
 
 ---
 
 ## Generated Output Structure
-![Output](media/output.png)
+![Output](https://raw.githubusercontent.com/couder-04/RepoRelic/main/extension/media/output.png)
 
 
 ---
