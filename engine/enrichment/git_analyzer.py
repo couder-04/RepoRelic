@@ -43,10 +43,13 @@ def enrich_with_git_history(
     progress.emit(4, "Knowledge Graph", "running",
                   "Analyzing git history for historical bug patterns...")
 
+    # Find the git root once to calculate relative paths later
+    git_root = _get_git_root(target_path)
+
     enriched = []
     for func in risky_funcs:
         func_copy = func.copy()
-        func_copy["git_history"] = _analyze_function_history(func, target_path, cfg)
+        func_copy["git_history"] = _analyze_function_history(func, target_path, git_root, cfg)
         enriched.append(func_copy)
 
     total_issues = sum(len(f["git_history"]["issues"]) for f in enriched)
@@ -58,10 +61,7 @@ def enrich_with_git_history(
 
 def _is_git_repo(path: str) -> bool:
     """Check if path is a git repository."""
-    if os.path.isfile(path):
-        cwd = os.path.dirname(path)
-    else:
-        cwd = path
+    cwd = os.path.dirname(path) if os.path.isfile(path) else path
         
     try:
         subprocess.run(
@@ -76,33 +76,55 @@ def _is_git_repo(path: str) -> bool:
         return False
 
 
-def _analyze_function_history(func: dict[str, Any], repo_path: str, cfg: Config) -> dict[str, Any]:
+def _get_git_root(path: str) -> Optional[str]:
+    """Get the root of the git repository."""
+    cwd = os.path.dirname(path) if os.path.isfile(path) else path
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "--show-toplevel"],
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=10,
+        )
+        return result.stdout.strip()
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError):
+        return None
+
+
+def _analyze_function_history(func: dict[str, Any], repo_path: str, git_root: Optional[str], cfg: Config) -> dict[str, Any]:
     """
     Analyze git history for a specific function.
-
-    Returns dict with:
-    - commit_count: number of commits touching this function
-    - volatility_score: 0-10 score based on commit frequency and error patterns
-    - issues: list of extracted issue descriptions from commit messages
-    - error_types: counter of error types mentioned in commits
     """
-    file_path = func["abs_path"]
+    abs_file_path = func["abs_path"]
     func_name = func["name"]
     start_line = func["lineno"]
     end_line = func["end_lineno"]
 
+    # Calculate relative path for git -L
+    # Git on Windows handles forward slashes much better for -L arguments
+    if git_root:
+        try:
+            rel_path = os.path.relpath(abs_file_path, git_root).replace(os.sep, "/")
+            cwd = git_root
+        except ValueError:
+            # Fallback if paths are on different drives on Windows
+            rel_path = abs_file_path.replace(os.sep, "/")
+            cwd = os.path.dirname(repo_path) if os.path.isfile(repo_path) else repo_path
+    else:
+        rel_path = abs_file_path.replace(os.sep, "/")
+        cwd = os.path.dirname(repo_path) if os.path.isfile(repo_path) else repo_path
+
     # Get git log for this file with line ranges
     try:
-        if os.path.isfile(repo_path):
-            cwd = os.path.dirname(repo_path)
-        else:
-            cwd = repo_path
-            
         # Get commits that touched lines in this function's range
+        # -s suppresses the diff output, giving us clean commit headers
         cmd = [
             "git", "log",
             "--oneline",
-            f"-L{start_line},{end_line}:{file_path}",
+            "-s",
+            f"-L{start_line},{end_line}:{rel_path}",
             f"--max-count={cfg.git_history_depth}",
         ]
         result = subprocess.run(
@@ -114,6 +136,8 @@ def _analyze_function_history(func: dict[str, Any], repo_path: str, cfg: Config)
         )
 
         if result.returncode != 0:
+            # Silent failure for individual functions is okay, but we could log it
+            # print(f"Git log failed for {rel_path}: {result.stderr}")
             return _empty_history()
 
         commits = result.stdout.strip().split("\n") if result.stdout.strip() else []
@@ -172,13 +196,13 @@ def _extract_issues_from_commit(message: str) -> list[str]:
 
     # Common patterns for bug-related commits
     patterns = [
-        r"fix(?:ed|es|ing)? (.+?)(?:\s*[.!?]|$)",
-        r"bug(?:\s*fix)? (.+?)(?:\s*[.!?]|$)",
-        r"error (.+?)(?:\s*[.!?]|$)",
-        r"issue (.+?)(?:\s*[.!?]|$)",
-        r"problem (.+?)(?:\s*[.!?]|$)",
-        r"resolve (.+?)(?:\s*[.!?]|$)",
-        r"handle (.+?)(?:\s*[.!?]|$)",
+        r"fix(?:ed|es|ing)?[:\s]+(.+?)(?:\s*[.!?]|$)",
+        r"bug(?:\s*fix)?[:\s]+(.+?)(?:\s*[.!?]|$)",
+        r"error[:\s]+(.+?)(?:\s*[.!?]|$)",
+        r"issue[:\s]+(.+?)(?:\s*[.!?]|$)",
+        r"problem[:\s]+(.+?)(?:\s*[.!?]|$)",
+        r"resolve[:\s]+(.+?)(?:\s*[.!?]|$)",
+        r"handle[:\s]+(.+?)(?:\s*[.!?]|$)",
     ]
 
     for pattern in patterns:

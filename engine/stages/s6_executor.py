@@ -63,9 +63,12 @@ def run(
 
 def _find_venv_python(target_path: str) -> str:
     """Look for .venv / venv in the target project; fall back to sys.executable."""
+    # If target_path is a file, search in its parent directory
+    base_dir = os.path.dirname(target_path) if os.path.isfile(target_path) else target_path
+    
     for venv_name in (".venv", "venv", "env"):
-        candidate_win = Path(target_path) / venv_name / "Scripts" / "python.exe"
-        candidate_unix = Path(target_path) / venv_name / "bin" / "python"
+        candidate_win = Path(base_dir) / venv_name / "Scripts" / "python.exe"
+        candidate_unix = Path(base_dir) / venv_name / "bin" / "python"
         if candidate_win.exists():
             return str(candidate_win)
         if candidate_unix.exists():
@@ -75,10 +78,13 @@ def _find_venv_python(target_path: str) -> str:
 
 def _run_single(python: str, test_file: str, cwd: str) -> list[TestResult]:
     """Run one test file with pytest and parse the output."""
+    # Ensure cwd is a directory
+    exec_cwd = os.path.dirname(cwd) if os.path.isfile(cwd) else cwd
+    
     try:
         proc = subprocess.run(
             [python, "-m", "pytest", test_file, "--tb=short", "-q", "--no-header"],
-            capture_output=True, text=True, timeout=120, cwd=cwd,
+            capture_output=True, text=True, timeout=120, cwd=exec_cwd,
         )
         return _parse_pytest_output(test_file, proc.stdout + proc.stderr)
     except subprocess.TimeoutExpired:
