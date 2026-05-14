@@ -2,7 +2,7 @@
   "name": "reporelic",
   "displayName": "RepoRelic",
   "description": "AI-powered Python repository analysis, autonomous test generation, execution diagnostics, and intelligent reporting.",
-  "version": "1.0.2",
+  "version": "1.0.4",
   "publisher": "YAPrepo",
   "license": "MIT",
   "icon": "media/icon.png",
